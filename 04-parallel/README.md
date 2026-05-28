@@ -2,22 +2,18 @@
 
 ## Prompt
 
-> Open **three separate Claude Code sessions** in the `04-parallel/` folder.
-> Paste one prompt per session, then start all three at the same time:
+> Open **one** Claude Code session in this folder and paste this:
 >
-> **Session 1:**
 > ```
-> Read tasks/agent-1.md and complete the task.
-> ```
+> Implement all three utility functions in parallel. Spawn a subagent for each task
+> and run them simultaneously — do not do them one at a time:
 >
-> **Session 2:**
-> ```
-> Read tasks/agent-2.md and complete the task.
-> ```
+> - tasks/agent-1.md → format_currency in src/utils/format.py
+> - tasks/agent-2.md → validate_email in src/utils/validate.py
+> - tasks/agent-3.md → slugify in src/utils/text.py
 >
-> **Session 3:**
-> ```
-> Read tasks/agent-3.md and complete the task.
+> Each subagent must write a failing test first, then implement the function.
+> Once all three finish, run pytest and confirm everything passes.
 > ```
 
 ---
@@ -25,35 +21,36 @@
 ## Steps
 
 1. `cd` into `04-parallel/`
-2. Open **three** Claude Code terminal windows in this directory
-3. Paste one prompt into each session (don't hit enter yet)
-4. Hit enter on all three at roughly the same time
-5. Watch them work simultaneously without conflicting
-6. Once all three finish, run `pytest tests/ -x --tb=short`
-7. All tests from all three agents should pass together
+2. Open **one** Claude Code session: `claude`
+3. Paste the prompt above and hit enter
+4. Watch Claude spawn three subagents and dispatch them simultaneously
+5. Once they finish, Claude runs `pytest tests/ -x --tb=short` to confirm all pass
 
 ---
 
 ## What this teaches
 
-The biggest speed multiplier in agentic development is parallelism. When tasks don't
-share state and modules don't import each other, multiple agents can run simultaneously —
-compressing wall-clock time dramatically.
+You don't need to open multiple terminals. A single prompt to a single agent can fan
+out to multiple subagents running in parallel — Claude handles the orchestration.
 
-Each agent implements one independent utility function with TDD:
-- Agent 1 → `format_currency` in `src/utils/format.py`
-- Agent 2 → `validate_email` in `src/utils/validate.py`
-- Agent 3 → `slugify` in `src/utils/text.py`
+The key requirement for safe parallelism: **the tasks must not touch the same files**.
+Each subagent here works in its own module with no imports between them, so there's
+no risk of conflicting writes.
 
-Because the three modules have **no imports between them**, there's zero risk of agents
-stepping on each other. The combined `pytest` run at the end is the proof.
+This is the orchestrator → subagent pattern:
+- You give one instruction to one agent
+- The orchestrator identifies which work is parallelizable
+- It dispatches subagents and collects results
+- You get the combined output without managing multiple sessions
+
+Compare the wall-clock time to running them sequentially — that's the unlock.
 
 ---
 
 ## Files
 
 ```
-AGENTS.md             — shared workflow (TDD, done definition)
+AGENTS.md             — project conventions and done definition
 tasks/agent-1.md      — format_currency spec
 tasks/agent-2.md      — validate_email spec
 tasks/agent-3.md      — slugify spec
